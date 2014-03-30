@@ -1,5 +1,5 @@
 #/usr/bin/env python
-import string,prob,operator,random,math
+import string,operator,random,math
 
 ######
 #Parsers
@@ -43,8 +43,22 @@ bed_fields = ['chr','start','end','label','score','strand']
 ###
 
 def complement(s):
-    comp = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A',
-            'a': 't', 'c': 't', 'g': 'c', 't': 'a'
+    comp = {'A':'T',
+            'T':'A',
+            'U':'A',
+            'G':'C',
+            'C':'G',
+            'Y':'R',
+            'R':'Y',
+            'S':'S',
+            'W':'W',
+            'K':'M',
+            'M':'K',
+            'B':'V',
+            'D':'H',
+            'H':'D',
+            'V':'B',
+            'N':'N',
             }
     complseq = [comp[base] for base in s]
     return complseq
@@ -56,7 +70,7 @@ def reverse_complement(s):
 
 def rcomp(s):
     """Does same thing as reverse_complement only cooler"""
-    return s.translate(string.maketrans("ATCG","TAGC"))[::-1]
+    return s.translate(string.maketrans("ATUGCYRSWKMBDHVN","TAACGRYSWMKVHDBN"))[::-1]
 
 def getTm(seq):
     Tm = 79.8 + 18.5*math.log10(0.05) + (58.4 * getGC(seq)) + (11.8 * getGC(seq)**2) - (820/len(seq))
@@ -130,6 +144,27 @@ def genRandomFromDist(length,freqs):
     chars = ['A','T','C','G']
     return ''.join([chars[draw(myDist)] for i in range(length)])
 
+#############
+# IUPAC tools
+##############
+iupacdict = {'A':'A',
+    'C':'C',
+    'G':'G',
+    'T':'T',
+    'M':'[AC]',
+    'R':'[AG]',
+    'W':'[AT]',
+    'S':'[CG]',
+    'Y':'[CT]',
+    'K':'[GT]',
+    'V':'[ACG]',
+    'H':'[ACT]',
+    'D':'[AGT]',
+    'B':'[CGT]',
+    'X':'[ACGT]',
+    'N':'[ACGT]'}
+
+
 ###########
 #Motif Tools
 ###########
@@ -165,19 +200,6 @@ def kmer_dictionary(seq,k,dic={},offset=0):
         subseq = seq[i:][:k]
         dic.setdefault(subseq,[]).append(i+1)
     return dic
-
-def kmer_stats(kmer,dic,genfreqs):
-    """Takes as argument a kmer string, a dictionary with kmers as keys from kmer_dictionary_counts, and a dictionary
-        of genomic frequencies with kmers as keys. Returns a dictionary of stats for kmer ("Signal2Noise Ratio, Z-score")
-    """
-    if not dic: return
-    if kmer in dic.keys() and kmer in genfreqs.keys():
-        observed = dic[kmer]
-        expected = sum(dic.values())*genfreqs[kmer]
-        snr = prob.snr(observed,expected)
-        zscore = prob.zscore(observed, expected)
-        return {'snr':snr,'zscore':zscore}
-    else: return
 
 def get_seeds(iter,seeds={}):
     counter = 0
