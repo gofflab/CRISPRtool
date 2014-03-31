@@ -19,14 +19,24 @@ class GuideRNA:
 		self.strand = strand
 		self.seqName = seqName
 		self.name = "%s:%s:%d" % (self.seqName,self.strand,self.start)
+
+		#Setup empty fields for later use
+		self.alignments = []
+		self.score = 100
+		self.overlap = False
+
+		#Validate guide
 		self.validate()
+
 	def validate(self):
 		if self.pam[-1] != 'G' and self.pam[-2] not in ['A','G']:
 			raise GuideError("%s: Not valid PAM sequence" % self.name)
 		if (len(self.sequence)!=20):
 			raise GuideError("%s: Guide not appropriate length" % self.name)
+
 	def __repr__(self):
 		return "%s - %s" % (self.sequence,self.pam)
+
 	def toFasta(self):
 		return ">%s\n%s" % (self.name,self.sequence+self.pam)
 
@@ -42,7 +52,13 @@ defaultPams = [
 		'NGG',
 		'NAG'
 	]
+
 guideSize = 20
+
+#Mismatch Matrix (M)
+M = [0,0,0.014,0,0,0.395,0.317,0,0.389,0.079,0.445,0.508,0.613,0.851,0.732,0.828,0.615,0.804,0.685,0.538]
+PamM = [1,1,1]
+
 
 #######################
 # Scan input sequence #
