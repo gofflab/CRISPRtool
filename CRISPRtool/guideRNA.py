@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import sequencelib,getopt,sys,re
 import tempfile
+import bowtie
 
 # Base class for a guide RNA
 # Takes a 23mer 20 Guide + 3 PAM and processes it accordingly
@@ -57,7 +58,6 @@ def makePamRe(pamList=defaultPams):
 	pamRe = re.compile(pamSearchString)
 	return pamRe
 
-
 def scanSequence(sequence,seqName,pamList=defaultPams):
 	pamRe = makePamRe(pamList)
 	#instatiate matches
@@ -104,7 +104,17 @@ def main():
 
 	#Main workflow
 
+def test():
+	fname = "test/test.fasta"
+	handle = open(fname,'r')
+	fastaIter = sequencelib.FastaIterator(handle)
 
+	mySeq = fastaIter.next()
+	guides = scanSequence(mySeq['sequence'],mySeq['name'])
+	
+	alignRes = bowtie.runBowtie(",".join([x.sequence+x.pam for x in guides]))
+
+	print alignRes
 
 if __name__ == "__main__":
-	main()
+	test()
