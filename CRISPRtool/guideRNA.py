@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import sequencelib,getopt,sys,re
+import tempfile
 
 # Base class for a guide RNA
 # Takes a 23mer 20 Guide + 3 PAM and processes it accordingly
@@ -42,7 +43,6 @@ defaultPams = [
 	]
 guideSize = 20
 
-
 #######################
 # Scan input sequence #
 #######################
@@ -67,7 +67,7 @@ def scanSequence(sequence,seqName,pamList=defaultPams):
 		searchSeq = sequence.upper()
 		if strand == "-":
 			searchSeq = sequencelib.rcomp(searchSeq)
-		pamIter = pamRe.finditer(searchSeq,19)
+		pamIter = pamRe.finditer(searchSeq,guideSize)
 		for match in pamIter:
 			if strand == "+":
 				start = match.start()-guideSize
@@ -76,8 +76,11 @@ def scanSequence(sequence,seqName,pamList=defaultPams):
 			guides.append(GuideRNA(searchSeq[match.start()-guideSize:match.end()],start,seqName,strand))
 	return guides
 
-
-
+def alignGuides(guides):
+	fname = open('guides.fasta','w')
+	for g in guides:
+		print >>fname, g.toFasta()
+	return
 
 def main():
 	try:

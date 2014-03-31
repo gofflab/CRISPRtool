@@ -4,8 +4,9 @@
 from subprocess import Popen, PIPE, STDOUT
 
 #Set defaults
-bowtieBin = "~/bin/bowtie2"
-bowtieIdx = "/n/rinn_data1/indexes/mouse/mm9/bowtie2/mm9"
+bowtieBin = "bowtie"
+bowtieIdx = "~/indexes/mm9/bowtie2/mm9"
+
 
 
 #Take a Fasta file and run bowtie2
@@ -14,6 +15,8 @@ class Bowtie:
 		pass
 
 
-def runBowtie(bin=bowtieBin,idx=bowtieIdx,argDict):
-	bowtieCmd = "%s -x %s"
-	pipe = subprocess.Popen(bowtieCmd, shell=True, bufsize=bufsize, stdin=subprocess.PIPE).stdin
+def runBowtie(fasta,bin=bowtieBin,idx=bowtieIdx):
+	bowtieCmd = "%s -f %s -c '%s'" % (bowtieBin,bowtieIdx,fasta)
+	p = Popen(bowtieCmd, shell=True)
+	res = p.communicate()
+	return res[0]
