@@ -130,7 +130,9 @@ def test():
 	
 	alignRes = bowtie.runBowtie(",".join([x.sequence+x.pam for x in guides]))
 
-	print alignRes
+	alignments = bowtie.parseBowtie(alignRes,)
+
+	print alignments[:10]
 
 if __name__ == "__main__":
 	test()
