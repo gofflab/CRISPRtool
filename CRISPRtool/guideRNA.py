@@ -23,7 +23,7 @@ class GuideRNA:
 
 		#Setup empty fields for later use
 		self.alignments = []
-		self.score = 100
+		self.score = 100.0
 		self.overlap = False
 
 		#Validate guide
@@ -71,12 +71,15 @@ def pairwise(iterable):
 
 
 def meanPairwiseDist(mmPos):
-	count = 0
-	dists = []
-	for pair in pairwise(mmPos):
-		count += 1
-		dists.append(max(pair)-min(pair))
-	return sum(dists)/float(count)
+	if len(mmPos)==1:
+		return 0
+	else:
+		count = 0
+		dists = []
+		for pair in pairwise(mmPos):
+			count += 1
+			dists.append(max(pair)-min(pair))
+		return sum(dists)/float(count)
 
 #######################
 # Scan input sequence #
@@ -116,10 +119,11 @@ def scanSequence(sequence,seqName,pamList=defaultPams):
 # 		print >>fname, g.toFasta()
 # 	return
 
-def scoreAlignments(alignments,M=M,PamM=PamM):
-		mismatchM = M + PamM
+def scoreAlignments(guides,M=M,PamM=PamM):
+	mismatchM = M + PamM
+	for guide in guides:
 		scores = []
-		for alignment in alignments:
+		for alignment in guide.alignments:
 			if len(alignment['mmpos'])>0:
 				#Calculate 
 				term1 = []
@@ -127,14 +131,29 @@ def scoreAlignments(alignments,M=M,PamM=PamM):
 					term1.append(1-mismatchM[mm])
 				term1 = reduce(lambda x, y: x*y, term1)
 				#print term1
-				term2 = 1/(((19-meanPairwiseDist(alignment['mmpos'])/19)*4)+1)
+				term2 = 1.0/(((19.0-meanPairwiseDist(alignment['mmpos'])/19.0)*4.0)+1.0)
 				#print term2
-				term3 = 1/len(alignment['mmpos'])^2
+				if (len(alignment['mmpos'])!=0):
+					#print len(alignment['mmpos'])
+					term3 = 1.0/(len(alignment['mmpos'])**2)
+				else:
+					term3 = 1
 				#print term3
-				scores.append(term1*term2*term3)
+				alignment['score'] = term1*term2*term3
 			else:
-				scores.append(0)
-		return scores
+				alignment['score'] = 0
+	return guides
+
+def summarizeGuideScores(guides):
+	for guide in guides:
+		sumStat = []
+		for hit in guide.alignments:
+			sumStat.append(hit['score'])
+		sumStat = sum(sumStat)
+		print sumStat
+		guide.score = 100.0/(100.0+sumStat)
+		print guide.score
+	return guides
 
 def main():
 	try:
@@ -171,12 +190,15 @@ def test():
 
 	guides = bowtie.parseBowtie(alignRes,guides)
 	
-	print guides[0].alignments
-	print len(guides[0].alignments)
+	#print guides[0].alignments
+	#print len(guides[0].alignments)
 
-	alignScores = scoreAlignments(guides[0].alignments)
+	guides = scoreAlignments(guides)
 
-	print alignScores
+	guides = summarizeGuideScores(guides)
+
+	for guide in guides:
+		print "%s\t%f\t%d" % (guide,guide.score,len(guide.alignments))
 
 if __name__ == "__main__":
 	test()

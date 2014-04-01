@@ -50,7 +50,6 @@ def parseBowtie(bowtieRes,guides):
 	alignments = []
 	
 	for line in lines:
-		print line
 		if line.startswith("#") or line == '':
 			continue
 		vals = line.split("\t")
@@ -66,6 +65,5 @@ def parseBowtie(bowtieRes,guides):
 		except:
 			align['numMM'] = 0
 		align['mmpos'] = mmpos
-		print align['readIdx']
 		guides[int(align['readIdx'])].alignments.append(align)
 	return guides
