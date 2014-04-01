@@ -2,6 +2,7 @@
 import sequencelib,getopt,sys,re
 import tempfile
 import bowtie
+from itertools import tee,izip
 
 # Base class for a guide RNA
 # Takes a 23mer 20 Guide + 3 PAM and processes it accordingly
@@ -57,8 +58,25 @@ guideSize = 20
 
 #Mismatch Matrix (M)
 M = [0,0,0.014,0,0,0.395,0.317,0,0.389,0.079,0.445,0.508,0.613,0.851,0.732,0.828,0.615,0.804,0.685,0.538]
-PamM = [1,1,1]
+PamM = [0,1,1]
 
+#######################
+# Helper functions
+#######################
+def pairwise(iterable):
+    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+    a, b = tee(iterable)
+    next(b, None)
+    return izip(a, b)
+
+
+def meanPairwiseDist(mmPos):
+	count = 0
+	dists = []
+	for pair in pairwise(mmPos):
+		count += 1
+		dists.append(max(pair)-min(pair))
+	return sum(dists)/float(count)
 
 #######################
 # Scan input sequence #
@@ -92,11 +110,31 @@ def scanSequence(sequence,seqName,pamList=defaultPams):
 			guides.append(GuideRNA(searchSeq[match.start()-guideSize:match.end()],start,seqName,strand))
 	return guides
 
-def alignGuides(guides):
-	fname = open('guides.fasta','w')
-	for g in guides:
-		print >>fname, g.toFasta()
-	return
+# def alignGuides(guides):
+# 	fname = open('guides.fasta','w')
+# 	for g in guides:
+# 		print >>fname, g.toFasta()
+# 	return
+
+def scoreAlignments(alignments,M=M,PamM=PamM):
+		mismatchM = M + PamM
+		scores = []
+		for alignment in alignments:
+			if len(alignment['mmpos'])>0:
+				#Calculate 
+				term1 = []
+				for mm in alignment['mmpos']:
+					term1.append(1-mismatchM[mm])
+				term1 = reduce(lambda x, y: x*y, term1)
+				#print term1
+				term2 = 1/(((19-meanPairwiseDist(alignment['mmpos'])/19)*4)+1)
+				#print term2
+				term3 = 1/len(alignment['mmpos'])^2
+				#print term3
+				scores.append(term1*term2*term3)
+			else:
+				scores.append(0)
+		return scores
 
 def main():
 	try:
@@ -127,12 +165,18 @@ def test():
 
 	mySeq = fastaIter.next()
 	guides = scanSequence(mySeq['sequence'],mySeq['name'])
-	
+	#print guides[0].alignments
+
 	alignRes = bowtie.runBowtie(",".join([x.sequence+x.pam for x in guides]))
 
-	alignments = bowtie.parseBowtie(alignRes,)
+	guides = bowtie.parseBowtie(alignRes,guides)
+	
+	print guides[0].alignments
+	print len(guides[0].alignments)
 
-	print alignments[:10]
+	alignScores = scoreAlignments(guides[0].alignments)
+
+	print alignScores
 
 if __name__ == "__main__":
 	test()

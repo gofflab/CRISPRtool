@@ -44,11 +44,28 @@ def runBowtie(fasta,bin=bowtieBin,idx=bowtieIdx):
 	res = p.communicate()
 	return res[0]
 
-def parseBowtie(bowtieRes,guides=''):
+def parseBowtie(bowtieRes,guides):
 	# Ignore header lines (^@) and comment lines (^#)
 	lines = bowtieRes.split("\n")
 	alignments = []
+	
 	for line in lines:
+		print line
+		if line.startswith("#") or line == '':
+			continue
 		vals = line.split("\t")
-		alignments.append(dict(zip(BowtieFields,vals)))
-	return alignments
+		align = dict(zip(BowtieFields,vals))
+		#mmpos = [0] * 23
+		mmpos = []
+		try:
+			mmlist = align['mismatches'].split(",")
+			align['numMM'] = len(mmlist)
+			for x in mmlist:
+				#mmpos[int(x.split(":")[0])]+=1
+				mmpos.append(int(x.split(":")[0]))
+		except:
+			align['numMM'] = 0
+		align['mmpos'] = mmpos
+		print align['readIdx']
+		guides[int(align['readIdx'])].alignments.append(align)
+	return guides
