@@ -40,7 +40,13 @@ class GuideRNA:
 		return "%s - %s" % (self.sequence,self.pam)
 
 	def toFasta(self):
-		return ">%s\n%s" % (self.name,self.sequence+self.pam)
+		return ">%s\n%s" % (self.name,self.sequence)
+
+	def toBowtieRead(self):
+		return self.sequence + 'NNG'
+	
+	def toBed(self):
+		pass
 
 
 def usage():
@@ -56,6 +62,7 @@ defaultPams = [
 	]
 
 guideSize = 20
+scoreCutoff = 80
 
 #######################
 # Helper functions
@@ -119,9 +126,7 @@ def scanSequence(sequence,seqName,pamList=defaultPams):
 def scoreAlignments(guides):
 	for guide in guides:
 		for alignment in guide.alignments:
-			x = guide.sequence
-			y = alignment['mmpos']
-			alignment['score'] = calculateScore(x, y)
+			alignment['score'] = calculateScore(alignment['mmpos'])
 	return guides
 
 def summarizeGuideScores(guides):
@@ -130,10 +135,19 @@ def summarizeGuideScores(guides):
 		for hit in guide.alignments:
 			sumStat.append(hit['score'])
 		sumStat = sum(sumStat)
-		print sumStat
-		guide.score = 100.0/(100.0+sumStat)
-		print guide.score
+		#print sumStat
+		guide.score = (100.0/(100.0+sumStat))*100
+		#print guide.score
 	return guides
+
+def filterMultiPerfectGuides(guides):
+	res = []
+	for guide in guides:
+		nPerfect = sum([1 for x in guide.alignments if len(x['mmpos'])==0])
+		#print nPerfect
+		if nPerfect < 2:
+			res.append(guide)
+	return res
 
 def main():
 	try:
@@ -164,9 +178,8 @@ def test():
 
 	mySeq = fastaIter.next()
 	guides = scanSequence(mySeq['sequence'],mySeq['name'])
-	#print guides[0].alignments
-
-	alignRes = bowtie.runBowtie(",".join([x.sequence+x.pam for x in guides]))
+	
+	alignRes = bowtie.runBowtie(",".join([x.sequence + x.pam for x in guides]))
 
 	guides = bowtie.parseBowtie(alignRes,guides)
 	
@@ -177,8 +190,11 @@ def test():
 
 	guides = summarizeGuideScores(guides)
 
+	guides = filterMultiPerfectGuides(guides)
+
 	for guide in guides:
-		print "%s\t%f\t%d" % (guide,guide.score,len(guide.alignments))
+		if guide.score >=scoreCutoff:
+			print "%s\t%f\t%d" % (guide,guide.score,len(guide.alignments))
 
 if __name__ == "__main__":
 	test()

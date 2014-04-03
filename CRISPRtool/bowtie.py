@@ -39,7 +39,7 @@ class BowtieAlignment:
 		pass
 
 def runBowtie(fasta,bin=bowtieBin,idx=bowtieIdx):
-	bowtieCmd = "%s -k 20 -l 23 -v 3 -f %s -c '%s'" % (bowtieBin,bowtieIdx,fasta)
+	bowtieCmd = "%s -k 50 --best -l 23 -v 3 -f %s -c '%s'" % (bowtieBin,bowtieIdx,fasta)
 	p = Popen(bowtieCmd, shell=True,stdout=PIPE)
 	res = p.communicate()
 	return res[0]
